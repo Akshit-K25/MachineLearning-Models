@@ -97,25 +97,16 @@ print("R-squared (R²) Score: {:.2f}".format(r2 * 100))
 # Use the last available 60-day data point as the starting point for prediction
 last_window = scaled_test_features[-window_size:]
 
-predicted_next_prices = []
+# Predict the next day's price (Day 1)
+next_pred = model.predict(last_window.reshape(1, window_size, len(features)))  # Predict the next day's price
 
-for i in range(7):
-    next_pred = model.predict(last_window.reshape(1, window_size, len(features)))  # Predict the next day's price
-    predicted_next_prices.append(next_pred[0, 0])  # Store the predicted 'Close' price
+# Inverse transform the predicted next price
+predicted_next_price = scaler.inverse_transform(
+    np.concatenate((np.zeros((1, 4)), np.array(next_pred).reshape(-1, 1)), axis=1)
+)[0, -1]
     
-    # Shift the window: keep the most recent 59 days + the predicted value as the 60th day
-    new_entry = np.array([[0, 0, 0, next_pred[0, 0], 0]])  # The new predicted price as part of the window
-    last_window = np.concatenate((last_window[1:], new_entry), axis=0)  # Shift the window forward
+# Divide the predicted price by 100,000
+predicted_next_price /= 1000000
 
-# Inverse transform the predicted next prices
-predicted_next_prices = scaler.inverse_transform(
-    np.concatenate((np.zeros((len(predicted_next_prices), 4)), np.array(predicted_next_prices).reshape(-1, 1)), axis=1)
-)[:, -1]
-
-# Divide the predicted prices by 100,000
-predicted_next_prices /= 1000000
-
-# Print the predicted prices for the next 7 days
-print("Predicted Prices for the next 7 days:")
-for i, price in enumerate(predicted_next_prices, 1):
-    print(f"Day {i}: {price:.2f}")
+# Print the predicted price for Day 1
+print(f"Predicted Price for Next Day: {predicted_next_price:.2f}")
